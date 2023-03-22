@@ -8,7 +8,7 @@ import pandas as pd #importing pandas to get the data in dataframe
 
 # request allows to get the page and read it in python.
 
-r = requests.get("https://www.football-data.co.uk/spainm.php",headers={'User-Agent': 'Mozilla/5.0'})
+r = requests.get("https://www.football-data.co.uk/englandm.php",headers={'User-Agent': 'Mozilla/5.0'})
 
 #reads the cocntents of the html page
 soup = BeautifulSoup(r.content, features="html.parser")
@@ -28,7 +28,7 @@ for link in soup.find_all('a'):
 y = allsearch.split()
 # print(y)
 
-z = [list(x for x in y if re.search("^mmz.*.csv$",str(x)))]
+z = [list(x for x in y if re.search("^mmz.*E0.csv$",str(x)))]
 
 #indexing to get back the list from list of list.
 z=z[0]
@@ -67,6 +67,4 @@ for m in req_url:
 #renaming some of the column anmes as required.
 readings.rename(columns={'BbMx>2.5':'BbMxTwo', 'BbAv>2.5':'BbAvTwo','BbMx<2.5':'BbMxLess','BbAv<2.5':'BbAvLess'}, inplace=True)
 
-readings.to_csv("laliga.csv")
-
-
+readings.to_csv("match_data.csv")
