@@ -56,15 +56,12 @@ req_url = complete_url[0:12]
 print(req_url)
 
 
-# # using pandas module to finally read teh data as dataframe from the links.
+# # using pandas module to finally read the data as dataframe from the links.
 
 readings = pd.DataFrame()
 for m in req_url:
     reader = pd.read_csv(m,sep=',', header=0, error_bad_lines=False)
     readings = readings.append(reader)
     # print(readings.head(n=5))
-
-#renaming some of the column anmes as required.
-readings.rename(columns={'BbMx>2.5':'BbMxTwo', 'BbAv>2.5':'BbAvTwo','BbMx<2.5':'BbMxLess','BbAv<2.5':'BbAvLess'}, inplace=True)
 
 readings.to_csv("match_data.csv")
