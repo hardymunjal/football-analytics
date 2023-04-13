@@ -123,331 +123,63 @@ gg
 ```
 
 ```{r}
-total_team_matches <- 
-
 home_team_wins <- as.data.frame(table(filter(data_df, FTR=="H")$HomeTeam))
 away_team_wins <- as.data.frame(table(filter(data_df, FTR=="A")$AwayTeam))
-draw_team_wins <- filter(data_df, FTR=="D")[c("HomeTeam", "AwayTeam")]
-
-library(reshape2)
-draw_team_wins <- melt(draw_team_wins, id.var=c("HomeTeam", "AwayTeam"), variable.name = "Total Draws")
-
 team_wins <- cbind(home_team_wins,away_team_wins$Freq)
+draw_team_wins <- filter(data_df, FTR=="D")[c("HomeTeam", "AwayTeam")]
 colnames(team_wins) <- c("TeamName", "HomeWins", "AwayWins")
+
+team_wins$HomeDraw = as.data.frame(table(draw_team_wins$HomeTeam))$Freq
+team_wins$AwayDraw = as.data.frame(table(draw_team_wins$AwayTeam))$Freq
+
+
+team_wins$HomeLoss <- as.data.frame(table(data_df$HomeTeam))$Freq - team_wins$HomeWins - team_wins$HomeDraw
+team_wins$AwayLoss <- as.data.frame(table(data_df$AwayTeam))$Freq - team_wins$AwayWins - team_wins$AwayDraw
 ```
 
 ```{r fig.height=14, fig.width=14}
 team_wins_plot <- melt(team_wins, id.vars = 1)
+team_wins_plot$Ground <- substr(team_wins_plot$variable, 1, 4)
+team_wins_plot$variable <- substr(team_wins_plot$variable, 5, 8)
 
-ggplot(aes(x=variable, y=value), data=team_wins_plot)+
-  geom_bar(aes(fill=variable), stat="identity", position="dodge")+
-  facet_wrap(vars(team_wins$TeamName))
+ggplot(team_wins_plot, aes(fill=variable, y=value, x=Ground)) + 
+    geom_bar(position="fill", stat="identity")+
+  facet_wrap(vars(team_wins_plot$TeamName),  scales = "free_x")
 
-barplot(team_wins, legend = c("HomeWins", "AwayWins"), beside=TRUE)
+team_wins$Home_Strength <- ((team_wins$HomeWins*3+team_wins$HomeDraw*1) / ((team_wins$HomeWins+team_wins$HomeLoss+team_wins$HomeDraw)*3))*100
+
+team_wins$Away_Strength <- ((team_wins$AwayWins*3+team_wins$AwayDraw*1) / ((team_wins$AwayWins+team_wins$AwayLoss+team_wins$AwayDraw)*3))*100
 ```
 
 ```{r}
-install.packages('ggplot2')
-
-library(ggplot2)
-install.packages('reshape2')
-
-library(reshape2)
-# heat map correlation
-title = "correlation heat map" 
-heat_map = qplot(x=Var1, y=Var2, data=melt(cor(df_subset, use="p")), fill=value, geom="tile") +  
-      scale_fill_gradient2(limits=c(-1, 1))
-heat_map <- heat_map + theme(axis.title.x=element_blank(), axis.text.x=element_blank()  
-                     , axis.ticks=element_blank())
-heat_map <- heat_map + ggtitle(title)  
-heat_map  
-```
-```{r}
-install.packages('gclus')
-library(gclus)
-#scatter plot matrix
-
-dta.col <- dmat.color(correlation_matrix) # get colors
-# reorder variables so those with highest correlation
-# are closest to the diagonal
-cpairs(df_subset, ord, panel.colors=dta.col, gap=.5,
-main="Variables Ordered and Colored by Correlation" )
+hist(team_wins$Home_Strength)
+hist(team_wins$Away_Strength)
 ```
 
 ```{r}
-install.packages('ggplot')
-library(ggplot2)
-
-df_subset2 <- df[ , c(4,5,6,7,8,9,10:21)] 
-
-df_subset2$FTR2 <- factor(df_subset2$FTR,levels=c("0", "1","2"),
-labels = c("A", "D","H"))
-
-df_subset2$HTR2 <- factor(df_subset2$HTR,levels=c("A", "D","H"),
-labels = c("0", "1","2"))
-
-ggplot(df_subset2, aes(x=df_subset2$FTHG,color=df_subset2$FTR2)) + geom_histogram(POSITION='dodge',binwidth=5)
+# Remove variables based on correlation and domain
+final_df <- data_df[,!(names(data_df) %in% c("FTHG","FTAG", "HS", "AS", "HTR"))]
+final_df2 <- inner_join(final_df, team_wins[c("TeamName","Home_Strength")], join_by(HomeTeam==TeamName))
+final_df2 <- inner_join(final_df2, team_wins[c("TeamName","Away_Strength")], join_by(AwayTeam==TeamName))
+str(final_df)
+```
+```{r}
+final_df <- final_df2[-c(1,2)]
 ```
 
 ```{r}
-table(df_subset2$FTAG)
+ggplot(aes(y=reorder(TeamName, Home_Strength), x=Home_Strength,
+       fill=Home_Strength),
+       data=team_wins[order(team_wins$Home_Strength, decreasing=TRUE)[1:10],])+
+  geom_bar(stat="identity")+
+  scale_fill_gradient(low = "cyan", high = "blue")+
+  ylab("Team")
 ```
 ```{r}
-table(df_subset2$FTHG)
-
+ggplot(aes(y=reorder(TeamName, Away_Strength), x=Away_Strength,
+       fill=Away_Strength),
+       data=team_wins[order(team_wins$Away_Strength, decreasing=TRUE)[1:10],])+
+  geom_bar(stat="identity")+
+  scale_fill_gradient(low = "violet", high = "darkblue")+
+  ylab("Team")
 ```
-```{r}
-
-# Create a histogram:
-hist(df_subset2$FTAG, breaks = 5, main = "Full Time Away Team Goals", 
-     xlab = "No. of Goals", ylab = "Frequency")
-
-```
-
-```{r}
-# Create a histogram of the data with 5 bins
-hist(df_subset2$FTHG, breaks = 5, main = "Full Time Home Team Goals", 
-     xlab = "No. of Goals", ylab = "Frequency")
-```
-
-```{r}
-# Load the ggplot2 package
-library(ggplot2)
-
-# Create two sample vectors of data
-data1 <- df_subset2$FTAG
-data2 <- df_subset2$FTHG
-
-# Combine the data into a data frame
-df <- data.frame(Data = c(data1, data2), Group = c(rep("FTAG", length(data1)), 
-                                                   rep("FTHG", length(data2))))
-
-# Create a histogram of the data with separate colors for each group
-ggplot(df, aes(Data, fill = Group)) + 
-  geom_histogram(alpha = 0.5, position = "dodge", bins = 10) +
-  ggtitle("Histogram of Full Time Goals") +
-  xlab("No. of Goals in a game") + ylab("Frequency")
-
-```
-
-This data is for full time goals. Blue represents the full time home team goals.
-Seems like home team is outperforming the away team in all the matches.
-
-```{r}
-# Load the ggplot2 package
-library(ggplot2)
-
-# Create two sample vectors of data
-data1 <- df_subset2$HTAG
-data2 <- df_subset2$HTHG
-
-# Combine the data into a data frame
-df <- data.frame(Data = c(data1, data2), Group = c(rep("FTAG", length(data1)), 
-                                                   rep("FTHG", length(data2))))
-
-# Create a histogram of the data with separate colors for each group
-ggplot(df, aes(Data, fill = Group)) + 
-  geom_histogram(alpha = 0.5, position = "dodge", bins = 10) +
-  scale_fill_manual(values = c('black', 'red')) +
-  ggtitle("Histogram of Full Time Goals") +
-  xlab("No. of Goals in a game") + ylab("Frequency")
-```
-Even in case of half time games, the home team is outperforming the away team.
-
-```{r}
-# Load the ggplot2 package
-library(ggplot2)
-
-# Create two sample vectors of data
-data1 <- df_subset2$HF
-data2 <- df_subset2$AF
-
-# Combine the data into a data frame
-df <- data.frame(Data = c(data1, data2), Group = c(rep("HF", length(data1)), rep("AF", length(data2))))
-
-# Create a histogram of the data with separate colors for each group
-ggplot(df, aes(Data, fill = Group)) + 
-  geom_histogram(alpha = 0.5, position = "dodge", bins = 10) +
-  scale_fill_manual(values = c(rgb(0, 114, 178, maxColorValue = 255), 
-                                rgb(230, 159, 0, maxColorValue = 255))) +
-  ggtitle("Histogram of Fouls") +
-  xlab("No. of Fouls in a game") + ylab("Frequency")
-```
-Seems like, home team is also having more fouls than the away team.
-
-```{r}
-# Load the ggplot2 package
-library(ggplot2)
-
-# Create two sample vectors of data
-data1 <- df_subset2$HY
-data2 <- df_subset2$AY
-
-# Combine the data into a data frame
-df <- data.frame(Data = c(data1, data2), Group = c(rep("HY", length(data1)), 
-                                                   rep("AY", length(data2))))
-
-
-# Create a histogram of the data with separate colors for each group
-ggplot(df, aes(Data, fill = Group)) + 
-  geom_histogram(alpha = 0.5, position = "dodge", bins = 10) +
-  scale_fill_manual(values = c(rgb(0, 114, 178, maxColorValue = 255), 
-                                rgb(230, 159, 0, maxColorValue = 255))) +
-  ggtitle("Histogram of Yellow Cards") +
-  xlab("No. of Yellow cards in a game") + ylab("Frequency")
-```
-
-```{r}
-# Load the ggplot2 package
-library(ggplot2)
-
-# Create two sample vectors of data
-data1 <- df_subset2$HR
-data2 <- df_subset2$AR
-
-# Combine the data into a data frame
-df <- data.frame(Data = c(data1, data2), Group = c(rep("HR", length(data1)), rep("AR", length(data2))))
-
-# Create a histogram of the data with separate colors for each group
-ggplot(df, aes(Data, fill = Group)) + 
-  geom_histogram(alpha = 0.5, position = "dodge", bins = 10) +
-  scale_fill_manual(values = c(rgb(0, 114, 178, maxColorValue = 255), 
-                                rgb(230, 159, 0, maxColorValue = 255))) +
-  ggtitle("Histogram of Red cards") +
-  xlab("No. of Red cards in a game") + ylab("Frequency")
-```
-Away team gets more red cards.
-
-```{r}
-# Fouls Vs FTR (0=away wins, 1=draw, 2=home wins)
-p <- ggplot(df_subset2, aes(HF, AF),colour = factor(FTR)) + geom_point()
-# With one variable
-
-p + facet_grid(. ~ FTR)
-```
-
-```{r}
-# Create the plot
-p <- ggplot(df_subset2, aes(FTHG, FTAG)) + geom_point(aes(color = factor(FTR)))
-
-# Add facet grid with colored backgrounds
-p + facet_grid(. ~ FTR, scales = "free", space = "free", switch = "x") +
-  scale_color_manual(values = c("red", "blue", "green")) +
-  theme(strip.background = element_rect(fill = NA, colour = NA), 
-        strip.text = element_text(colour = "black", size = 10, face = "bold"))
-
-```
-0 = Away team wins
-1 = draw
-2 = home team wins
-```{r}
-# Create a mosaic plot
-mosaicplot(table(df_subset2$FTR,df_subset2$FTAG ), color = c("black", "gray"))
-```
-When away team wins (0), the maximum goals are = 2.
-When home team wins (2), maximum goals are = 1!!!
-
-```{r}
-table(df$HomeTeam)
-
-```
-
-
-```{r}
-# Get count of each category
-count_table <- table(df$AwayTeam)
-
-# Sort the table in ascending order by count
-sorted_table <- count_table[order(count_table)]
-
-# Print the sorted table
-print(sorted_table)
-
-```
-
-For Away teams, we have maximum data for Tottenham, Man City, Everton, Chelsea, 
-Arsenal. 
-We have least data for Nott'm Forest.
-
-```{r}
-# Create a sample data frame
-df1 <- data.frame(team = df$HomeTeam,
-                 result = df$FTR)
-
-# Calculate the number of wins and losses for each team
-library(dplyr)
-
-summary <- df1 %>%
-  group_by(team) %>%
-  summarize(wins = sum(result == "H"), losses = sum(result == "A"),
-            draw = sum(result=='D'),win_percent = round(wins / n() * 100, 2),
-            loss_percent = round(losses / n() * 100, 2),
-            draw_percent = round(draw / n() * 100, 2)) %>%
-  arrange(desc(win_percent))
-# Print the summary
-print(summary)
-```
-
-Highest winning percentage is for Man City in home teams.
-
-```{r}
-# Create a sample data frame
-df1 <- data.frame(team = df$AwayTeam,
-                 result = df$FTR)
-
-# Calculate the number of wins and losses for each team
-library(dplyr)
-
-summary <- df1 %>%
-  group_by(team) %>%
-  summarize(wins = sum(result == "A"), losses = sum(result == "H"),
-            draw = sum(result=='D'),win_percent = round(wins / n() * 100, 2),
-            loss_percent = round(losses / n() * 100, 2),
-            draw_percent = round(draw / n() * 100, 2)) %>%
-  arrange(desc(win_percent))
-# Print the summary
-print(summary)
-```
-
-In Away Teams too Man CIty is at the top. However, Arsenal which was at second 
-position has now dropped to fifth position.
-```{r}
-# Create a sample data frame
-df1 <- data.frame(team = df$HomeTeam,
-                 result = df$HS)
-
-# Calculate the number of wins and losses for each team
-library(dplyr)
-
-summary <- df1 %>%
-  group_by(team) %>%
-  summarize(A = sum(result >0 & result<=10), B = sum(result >10 & result<=20),
-            C = sum(result >20 ))%>%
-  arrange(desc(C))
-# Print the summary
-print(summary)
-```
-This represents that Man CIty had the most home team shots.
-As we saw before in correlation plots, home team shots are correlated to a home
-team winning. 
-
-```{r}
-# Create a sample data frame
-df1 <- data.frame(team = df$HomeTeam,
-                 shots = df$HS, results = df$FTR)
-
-# Calculate the number of wins and losses for each team
-library(dplyr)
-
-summary <- df1 %>%
-  group_by(team) %>%
-  summarize(A = sum(shots >0 & shots<=10), B = sum(shots >10 & shots<=20),
-            C = sum(shots >20 ), wins = sum(results == "H"), 
-            losses = sum(results == "A"),
-            draw = sum(results == 'D'))%>%
-  arrange(desc(C))
-# Print the summary
-print(summary)
-
-```
-
