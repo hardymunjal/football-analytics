@@ -6,7 +6,7 @@ library(tidyverse)
 
 # Code
 ## Select required columns
-raw_data = read_csv('match_data.csv')
+raw_data = read_csv('data/match_data.csv')
 colnames(data)
 
 data_df = raw_data[,c("Date", "HomeTeam" ,"AwayTeam","FTHG","FTAG",
