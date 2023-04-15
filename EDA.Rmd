@@ -13,20 +13,59 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(tidyr)
 library(tidyverse)
+library(reshape2)
 ```
 ```{r}
 # Code
-data_df = read_csv('data/cleaned_match_data.csv')
+data = read_csv('data/cleaned_match_data.csv')
+data$Year = format(as.Date(data$Date, format="%d-%m-%Y"),"%Y")
+data_df = data[-c(1)]
+data_df$col_ind = c(1:4450)
 
-# Removed date because it doesnt add any value to data
-data_df = data_df[-c(1)]
-
+# # Removed date because it doesnt add any value to data
+# len <- 1:nrow(data_df)
+# ind = len[seq(1, length(len),8)]
+# val_df = data_df[ind,]
+# data_df = data_df[-ind,]
 # Convert Datatype
 data_df$HTR = as.factor(data_df$HTR)
 data_df$FTR = as.factor(data_df$FTR)
 data_df$HomeTeam = as.factor(data_df$HomeTeam)
 data_df$AwayTeam = as.factor(data_df$AwayTeam)
 str(data_df)
+```
+```{r}
+year_list <- unique(data_df$Year)
+team_list <- unique(data_df$HomeTeam)
+temp_df <- data.frame()
+sampled_index_list <- list()
+for(year in year_list){
+  for (team in team_list){
+    team_match_df = filter(data_df, Year==year, HomeTeam==team)
+    sampled_index = sample(nrow(team_match_df),1)
+    sampled_index_list = append(sampled_index_list, team_match_df[sampled_index,"col_ind"]$col_ind)
+    temp_df = rbind(temp_df, team_match_df[sampled_index,])
+  }
+}
+```
+
+```{r}
+data_df = data_df[-c(temp_df$col_ind),]
+```
+
+```{r}
+for(year in year_list){
+  for (team in team_list){
+    team_match_df = filter(data_df, Year==year, AwayTeam==team)
+    sampled_index = sample(nrow(team_match_df),1)
+    sampled_index_list = append(sampled_index_list, team_match_df[sampled_index,"col_ind"]$col_ind)
+    temp_df = rbind(temp_df, team_match_df[sampled_index,])
+  }
+}
+```
+
+```{r}
+val_df = temp_df
 ```
 
 ```{r}
@@ -75,7 +114,7 @@ gg
 ```{r fig.height=14, fig.width=14, warning=FALSE}
 # Correlation Plots
 upper_panel<-function(x, y){
-    points(x,y, pch=19, col=c("darkblue", "darkorange", "violet")[data_df$FTR])
+    points(x,y, pch=19)
 }
 
 lower_panel <- function(x, y){
@@ -123,8 +162,25 @@ gg
 ```
 
 ```{r}
+
+pairs(data_df[c("HTHG", "FTHG", "HTAG", "FTAG")],
+      upper.panel = upper_panel,
+      lower.panel = lower_panel)
+
+
+pairs(data_df[c("HS", "HST", "AS", "AST")],
+      upper.panel = upper_panel,
+      lower.panel = lower_panel)
+
+
+# ggplot(gather(data_df[,["HT", "HST", "AT", "AST"]], cols, value), aes(x = value)) + 
+       # geom_histogram(stat="count") + facet_wrap(.~cols, scales="free", nrow=2)
+```
+
+```{r  fig.height=14, fig.width=14}
 home_team_wins <- as.data.frame(table(filter(data_df, FTR=="H")$HomeTeam))
 away_team_wins <- as.data.frame(table(filter(data_df, FTR=="A")$AwayTeam))
+
 team_wins <- cbind(home_team_wins,away_team_wins$Freq)
 draw_team_wins <- filter(data_df, FTR=="D")[c("HomeTeam", "AwayTeam")]
 colnames(team_wins) <- c("TeamName", "HomeWins", "AwayWins")
@@ -132,12 +188,9 @@ colnames(team_wins) <- c("TeamName", "HomeWins", "AwayWins")
 team_wins$HomeDraw = as.data.frame(table(draw_team_wins$HomeTeam))$Freq
 team_wins$AwayDraw = as.data.frame(table(draw_team_wins$AwayTeam))$Freq
 
-
 team_wins$HomeLoss <- as.data.frame(table(data_df$HomeTeam))$Freq - team_wins$HomeWins - team_wins$HomeDraw
 team_wins$AwayLoss <- as.data.frame(table(data_df$AwayTeam))$Freq - team_wins$AwayWins - team_wins$AwayDraw
-```
 
-```{r fig.height=14, fig.width=14}
 team_wins_plot <- melt(team_wins, id.vars = 1)
 team_wins_plot$Ground <- substr(team_wins_plot$variable, 1, 4)
 team_wins_plot$variable <- substr(team_wins_plot$variable, 5, 8)
@@ -145,22 +198,39 @@ team_wins_plot$variable <- substr(team_wins_plot$variable, 5, 8)
 ggplot(team_wins_plot, aes(fill=variable, y=value, x=Ground)) + 
     geom_bar(position="fill", stat="identity")+
   facet_wrap(vars(team_wins_plot$TeamName),  scales = "free_x")
-
-team_wins$Home_Strength <- ((team_wins$HomeWins*3+team_wins$HomeDraw*1) / ((team_wins$HomeWins+team_wins$HomeLoss+team_wins$HomeDraw)*3))*100
-
-team_wins$Away_Strength <- ((team_wins$AwayWins*3+team_wins$AwayDraw*1) / ((team_wins$AwayWins+team_wins$AwayLoss+team_wins$AwayDraw)*3))*100
 ```
 
 ```{r}
-hist(team_wins$Home_Strength)
-hist(team_wins$Away_Strength)
+val_home_team_wins <- as.data.frame(table(filter(val_df, FTR=="H")$HomeTeam))
+val_away_team_wins <- as.data.frame(table(filter(val_df, FTR=="A")$AwayTeam))
+
+val_team_wins <- cbind(val_home_team_wins,val_away_team_wins$Freq)
+val_draw_team_wins <- filter(val_df, FTR=="D")[c("HomeTeam", "AwayTeam")]
+colnames(val_team_wins) <- c("TeamName", "HomeWins", "AwayWins")
+
+val_team_wins$HomeDraw = as.data.frame(table(val_draw_team_wins$HomeTeam))$Freq
+val_team_wins$AwayDraw = as.data.frame(table(val_draw_team_wins$AwayTeam))$Freq
+
+val_team_wins$HomeLoss <- as.data.frame(table(val_df$HomeTeam))$Freq - val_team_wins$HomeWins - val_team_wins$HomeDraw
+val_team_wins$AwayLoss <- as.data.frame(table(val_df$AwayTeam))$Freq - val_team_wins$AwayWins - val_team_wins$AwayDraw
+
+val_team_wins$Home_Strength <- ((val_team_wins$HomeWins*3+val_team_wins$HomeDraw*1) / (
+  (val_team_wins$HomeWins+val_team_wins$HomeLoss+val_team_wins$HomeDraw)*3))*100
+
+val_team_wins$Away_Strength <- ((val_team_wins$AwayWins*3+val_team_wins$AwayDraw*1) / (
+  (val_team_wins$AwayWins+val_team_wins$AwayLoss+val_team_wins$AwayDraw)*3))*100
+```
+
+```{r}
+hist(val_team_wins$Home_Strength)
+hist(val_team_wins$Away_Strength)
 ```
 
 ```{r}
 # Remove variables based on correlation and domain
-final_df <- data_df[,!(names(data_df) %in% c("FTHG","FTAG", "HS", "AS", "HTR"))]
-final_df2 <- inner_join(final_df, team_wins[c("TeamName","Home_Strength")], join_by(HomeTeam==TeamName))
-final_df2 <- inner_join(final_df2, team_wins[c("TeamName","Away_Strength")], join_by(AwayTeam==TeamName))
+final_df <- data_df[,!(names(data_df) %in% c("FTHG","FTAG", "HS", "AS", "HTR", "Year", "col_ind"))]
+final_df2 <- inner_join(final_df, val_team_wins[c("TeamName","Home_Strength")], join_by(HomeTeam==TeamName))
+final_df2 <- inner_join(final_df2, val_team_wins[c("TeamName","Away_Strength")], join_by(AwayTeam==TeamName))
 str(final_df)
 ```
 ```{r}
@@ -170,7 +240,7 @@ final_df <- final_df2[-c(1,2)]
 ```{r}
 ggplot(aes(y=reorder(TeamName, Home_Strength), x=Home_Strength,
        fill=Home_Strength),
-       data=team_wins[order(team_wins$Home_Strength, decreasing=TRUE)[1:10],])+
+       data=val_team_wins[order(val_team_wins$Home_Strength, decreasing=TRUE)[1:10],])+
   geom_bar(stat="identity")+
   scale_fill_gradient(low = "cyan", high = "blue")+
   ylab("Team")
@@ -178,7 +248,7 @@ ggplot(aes(y=reorder(TeamName, Home_Strength), x=Home_Strength,
 ```{r}
 ggplot(aes(y=reorder(TeamName, Away_Strength), x=Away_Strength,
        fill=Away_Strength),
-       data=team_wins[order(team_wins$Away_Strength, decreasing=TRUE)[1:10],])+
+       data=val_team_wins[order(val_team_wins$Away_Strength, decreasing=TRUE)[1:10],])+
   geom_bar(stat="identity")+
   scale_fill_gradient(low = "violet", high = "darkblue")+
   ylab("Team")
