@@ -1,0 +1,149 @@
+---
+title: "Football Analytics Report"
+output:
+  pdf_document:
+    number_sections: true
+    sansfont: Times New Roman
+date: "2023-04-14"
+bibliography: references.yaml
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+Football, or soccer as it is known in some parts of the world, has long been one of the most popular sports globally. The first-ever international match was played in 1872 between England and Scotland which ended in a draw with score 0-0. Since the early 21st century, with an increase in global broadcasting, interest in football has been rising all around the world. A survey of 18 major markets across the Americas, Europe, the Middle East and Asia shows the sport garnering powerful interest in more than 40% of the population, well ahead of its nearest rival sports[^1]. Football is a sport that transcends gender all over the world. According to Nielsen SportsDNA global research[^2], football is the most popular sport among women worldwide, and a recent study found that 70% of women find the men's FIFA World Cup "very appealing," while 58% find the women's FIFA World Cup "very appealing."
+
+[^1]: (2018, June) Fan Favorite: The Global Popularity of Football is Rising, Nielsen, <https://www.nielsen.com/insights/2018/fan-favorite-the-global-popularity-of-football-is-rising/>
+
+[^2]: (2018, June) World Football Report, Nielsen, <https://www.nielsen.com/insights/2018/world-football-report/>
+
+This rapidly growing interest has made data analytics a crucial component of football, allowing analysts to identify the critical factors that determine the outcome of matches. By leveraging advanced statistical models and machine learning techniques, people can make betting decisions, coaches can develop team strategies, and other important decisions in the sport. As data becomes increasingly available and modeling techniques continue to advance, the future of football analytics looks bright, and we can expect to see continued innovation and progress in this exciting field.
+
+Despite this, predicting the outcome of football matches can be challenging, with many variables at play that can influence the result. To overcome this challenge, football analytics researchers have developed advanced statistical models, regression analysis, neural networks, and machine learning techniques. These techniques help analysts to analyze vast amounts of data and identify key factors that impact match outcomes. Analysts can also predict the probability of different outcomes in a match, such as the likelihood of the home team winning, the away team winning, or the match ending in a draw. By understanding the data and with significant analysis, accurate predictions of match results can be generated. To achieve this, researchers must first identify the underlying factors that contribute to these outcomes, such as team form, player performance, and tactical decisions made by coaches.
+
+One of the significant breakthroughs in football analytics has been the compilation of extensive datasets covering various leagues such as the Premier League, Champions League, and League One in England, from the 1993-1994 season to the present day. It is a game of high-adrenaline matches between some of the most famous players in the world. In total 20 teams fight for the domestic league title year-round, each time playing 38 games, meeting the same team at home and again at away fixtures. Head-to-head wins usually are considered highly important at the end for determining the ultimate winner.
+
+Today, in live matches, data is collected in many ways and under different categories. Some of these categories includes- performance data (team performance, goals, assists, shots, and tackles), tactical data (team formations, player positions, and playing styles), physical data (physical attributes, such as height, weight, speed, and injuries), biometric data (heart rate, breathing rate, and muscle fatigue), and environmental data (weather conditions, altitude, and stadium conditions).
+
+In this report, we discuss how we use the open source performance data available to examine the results of Head-to-Head games and the impact of home-field advantage, using a range of statistical measures and visualization techniques. Overall, football analytics represents an exciting and rapidly evolving field, with enormous potential for improving our understanding of the sport and making more informed decisions.
+
+## Data set Source and Detailed Description
+
+### Dataset Description
+
+The football-data.co.uk England dataset is a collection of English football matches from 1993-1994 to 2022-2023 for various leagues including Premier League, Champion League, League1, etc. The dataset includes detailed information on each match such as the date, time, location, teams, and final score. In addition, it also includes data on the goals scored by each team, shots on target, fouls committed, cards given, and other relevant statistics.
+
+### Source
+
+The website is a free resource that provides comprehensive football data from various leagues and competitions around the world. The data is available as CSV files with each CSV file containing data pertaining to each season. For our analysis, we are focusing on the Premier League because it is the most popular league and has sufficient data points to perform the analysis.
+
+Dataset -- <https://www.football-data.co.uk/englandm.php>
+
+### Sample Size
+
+We scraped the latest 12 seasons data i.e., 2011-2012 to 2022-2023 which contains data on 4451 matches with 21 variables of interest as described in the below table with our response variable as FTR with three categories (H: home team win, A: away team win, D: draw)
+
+```{r echo=FALSE, warning=FALSE, results="asis"}
+library(kableExtra)
+table_description_df <- data.frame(
+  Variable = c("DIV","DATE","TIME","HOMETEAM","AWAYTEAM","FTHG","FTAG","FTR","HTHG","HTAG","HTR","REFEREE","HS","AS","HST","AST","HF","AF","HC","AC","HY","AY","HR","AR"),
+  Description = c("Division of the league","Date of the match","Time of the match","Name of the Home Team","Name of the Away Team","Number of goals scored by the home Team at fulltime","Number of goals scored by the away Team at fulltime","Full-time result (H: home team win, A: away team win, D: draw)","Number of goals scored by the home team at halftime","Number of goals scored by the away team at halftime","Halftime result (H: home team win, A: away team win, D: draw)","Name of the match referee","Number of shots taken by the home team","Number of shots taken by the away team","Number of shots on target by the home team","Number of shots on target by the away team","Number of fouls committed by the home team","Number of fouls committed by the away team","Number of corners taken by the home team","Number of corners taken by the away team","Number of yellow cards given to the home team","Number of yellow cards given to the away team","Number of red cards given to the home team","Number of red cards given to the away team"))
+
+kbl(table_description_df , booktabs = T) %>%
+  kable_styling(latex_options = "striped")
+```
+
+### Data cleaning & Processing:
+
+Our data cleaning process involved checking for missing or data
+
+During our data cleaning process, we conducted a thorough check for null values in our data set. We assessed each variable individually to identify any missing values and found that only one row contained some missing data. Given that our data set consisted of 4451 rows, we determined that dropping this single row would not significantly impact our analysis. Therefore, we removed this row and proceeded further with our analysis using the remaining 4450 rows.
+
+## Methodology
+
+### Distribution Plots
+
+It is vital to check for any class imbalance, outliers, and skewness of data before fitting a model. In our analysis, we assessed the quality of our data by examining its distribution and checking for outliers using histogram and bar plots. First, we checked for the distribution using bar plots for categorical data. A bar plot is a type of visualization that displays the data using rectangular bars, where the height of each bar represents the frequency or the count of data values falling under a specific category. We had five categorical variables, so we plotted the distribution of these five variables using this method.
+Next, we checked the distribution of the continuous variables using histograms. Histograms are a type of data visualization like bar chart except that it is used for continuous data. It is used to explore the spread and the shape of the data by dividing the data into a set of intervals (bins) and the count of data points that fall within each bin is shown as a bar. We plotted histograms for 17 variables and then analyzed their distribution.
+
+Our analysis revealed that most of our data was normally distributed with no significant skewness and there were no significant outliers present. Additionally, we observed that all three classes (win, loss, and draw) had enough data, which indicates that our data is suitable for modeling.
+
+### Outlier Analysis
+...
+
+
+### Correlation Analysis
+Next, we examined the correlation between our numerical variables. Correlation represents the degree to which two or more variables are related or associated with each other. It indicates how strong the relationship is between two variables, and whether it is positive, negative, or neutral. This step is crucial because highly correlated variables can lead to unstable parameter estimates, high standard errors, and reduced predictive performance. 
+Since the majority of our variables (18 out of 22) are numerical, we deemed it necessary to check for correlation for these numerical variables. By identifying any highly correlated variables and removing them from our analysis, we could improve the parameter estimates and the predictive power of the final model. We found out that eight of our predictor variables showed correlation, so we examined these separately. Out of these eight highly correlated variables, we dropped four variables- FTHG (full time home team goals) highly positively correlated with HTHG (half time home team goals), FTAG (full time away team goals) highly positively correlated with HTAG (half time away team goals), HS (shots taken by the home team) highly positively correlated with HST (number of shots on target by the home team), and AS (shots taken by the away team) highly positively correlated with AST (number of shots on target by the away team).
+
+### Feature Engineering
+
+The variables *HomeTeam* and *AwayTeam* are identifiers of the teams that partake in a particular match. We possess historical data of 37 teams, and the use of one-hot encoding to these variables would introduce 36 additional variables per team (for both Home and Away teams). The *HomeTeam* and *AwayTeam* variables hold vital information about the prowess of the teams that engage in the match, and their significance in predicting the match outcome cannot be overemphasized. For this reason, we have opted to convert these categorical variables into numerical ones. This conversion will result in the creation of new variables that reflect the strength of each team in the event.
+
+Moreover, we are utilizing data from the Premier League, where a win attracts 3 points, while a draw results in 1 point being awarded to each participating team. Therefore,
+
+$$
+\text{Home Strength} = 100*\frac{(\text{Total wins at home})*3 + (\text{Total draws at home})*1}{(\text{Total matches played at home})*3}
+$$
+
+$$
+\text{Away Strength} = 100*\frac{(\text{Total away wins})*3 + (\text{Total away draws})*1}{(\text{Total matches away matches played})*3}
+$$ \### Multinomial Logistic Regression
+
+It is an extension of the binomial regression model where the response variable takes more than two categories. Since, FTR has three categories (Win, Draw, Lose), we used multinomial logistic regression to model the outcomes. We started by using a baseline model that includes all the relevant variables and used step wise selection to eliminate the variables that did not add any significance to the model.
+
+In our modelling, we declared 'Draw' category as the baseline, say, j = 1.
+
+Then, the multinomial logit model links the probabilities pij to the predictors as follows:
+
+$$\eta_{ij} = \beta_{0j} + \beta_{1j}x_{1i}  + . . . + \beta_{(p−1)j}x_{(p−1)i} = x^T_i \beta_j = \log {p_{ij}/p_{i1}}$$
+
+So that we get,
+
+$$p_{i1} = 1 - \sum_{j=2}^{J} p_{ij}$$
+
+and,
+
+$$p_{ij} = \frac{\exp(\eta_{ij})}{1+\sum_{j=2}^{J} \exp_{\eta ij}} for
+2\leq j\leq J$$
+
+Note that $$ \eta_{i1}  = 0 (= \eta_{i1} = \log {p_{i1}/p_{i1}} = log 1 = 0)$$
+
+### Decision Trees:
+
+Decision trees are a popular machine learning algorithm that is used for classification and regression tasks. We split the input data sets into subsets based on the values of the input features, and then recursively apply the same process to each subset until a stopping criterion is met.
+
+The data is split into subsets based on the values of the input features, such that each subset contains as many samples as possible that belong to the same class. The goal is to minimize the misclassification rate by constructing a decision tree that separates the classes as effectively as possible.
+
+One of the main advantages of decision trees is that they are easy to interpret and visualize, making them a useful tool for exploratory data analysis. Decision trees can also handle both categorical and continuous data, and can capture non-linear relationships between the input features and the target variable.
+
+However, decision trees are prone to over fitting, especially when the tree is deep and complex. To overcome this issue, various techniques such as pruning, setting a maximum tree depth, and using ensemble methods like random forests have been developed.
+
+### Random Forests:
+
+Random forests is a popular machine learning algorithm that is used for both classification and regression tasks. It is a type of ensemble learning method that combines decision trees to make more accurate and robust predictions.
+
+The idea behind random forests is to build multiple decision trees using different subsets of the training data and a random selection of features at each split point. These decision trees are constructed independently of each other, meaning that they are not correlated and do not share any information during the training process.
+
+Once the decision trees are built, the random forest algorithm aggregates their predictions to make the final prediction. In classification tasks, the majority class predicted by the individual trees is chosen as the final output, while in regression tasks, the mean or median of the predicted values is taken as the final output.
+
+An advantage of random forests is that they handle high-dimensional data and can capture complex non-linear relationships between the input features and the target variables. They are less prone to over fitting than single decision trees.
+
+## Results
+
+### Exploratory Data Analysis
+
+. . .
+
+### Main Data Analysis
+
+. . .
+
+## Conclusion
+
+. . .
+
+## References:
