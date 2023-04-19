@@ -1,0 +1,47 @@
+---
+output:
+  bookdown::pdf_book:
+    toc: true
+    toc_depth: 3
+    number_sections: yes
+    latex_engine: xelatex
+geometry: margin=2.54cm
+fontsize: 11pt
+fontsetup: "unicode-math"
+lot: yes
+lof: yes
+header-includes: |
+  \renewcommand\listfigurename{Appendix B: (Images)}
+  \renewcommand\listtablename{Appendix C: (Tables)}
+  \renewcommand\contentsname{Appendix A}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+\newpage
+
+# R-Code
+
+## Hello World
+
+```{r echo=TRUE, eval=FALSE}
+print("Hello")
+```
+
+# Appendix B: (Images) {.unlisted .unnumbered}
+
+```{r echo=FALSE, fig.cap="Distribution plots for categorical variables", out.width = '100%'}
+knitr::include_graphics("./EDA_files/figure-latex/distributions-analysis-1.png")
+```
+
+```{r echo=FALSE, fig.cap="Distribution plots for categorical variables", out.width = '100%'}
+knitr::include_graphics("./EDA_files/figure-latex/distributions-analysis-2.png")
+```
+
+```{r echo=FALSE, fig.cap="Distribution plots for categorical variables", out.width = '100%'}
+knitr::include_graphics("./EDA_files/figure-latex/boxplot-1.png")
+```
+
+# Appendix C: (Tables) {.unlisted .unnumbered}

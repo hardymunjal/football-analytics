@@ -1,11 +1,16 @@
 ---
 title: "football"
-output: pdf_document
+output:
+  pdf_document:
+    keep_md: yes
 date: "2023-03-23"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(dev = "png",
+                      dpi = 300,
+                      echo = FALSE,
+                      cache = FALSE)
 ```
 
 ```{r}
@@ -14,6 +19,7 @@ library(dplyr)
 library(tidyr)
 library(tidyverse)
 library(reshape2)
+library(kableExtra)
 ```
 ```{r}
 # Code
@@ -34,6 +40,7 @@ data_df$HomeTeam = as.factor(data_df$HomeTeam)
 data_df$AwayTeam = as.factor(data_df$AwayTeam)
 str(data_df)
 ```
+
 ```{r}
 year_list <- unique(data_df$Year)
 team_list <- unique(data_df$HomeTeam)
@@ -76,9 +83,13 @@ cat("Numerical Columns within dataset: ", colnames(data_df[, numeric_col]),"\n")
 cat("Categorical Columns within dataset: ", colnames(data_df[, !numeric_col]))
 
 data_df[,numeric_col] = sapply(data_df[,numeric_col],as.integer)
+
+ds_df <- as.data.frame(apply(data_df[,numeric_col], 2, summary))
+ds_df <- ds_df[-c(17)]
+write.csv(ds_df, "data/descriptive_stats.csv")
 ```
 
-```{r fig.height=6, fig.width=10, warning=FALSE}
+```{r distributions-analysis, fig.height=6, fig.width=10, warning=FALSE}
 # Distributions Analysis
 gg <- 
   ggplot(gather(data_df[,!numeric_col], cols, value), aes(x = value)) + 
@@ -111,7 +122,16 @@ ggsave(
 
 gg
 ```
-```{r fig.height=14, fig.width=14, warning=FALSE}
+
+```{r boxplot, fig.height=10, fig.width=10}
+ggplot(gather(data_df[, numeric_col], cols, value), aes(y = value)) + 
+       geom_boxplot() + facet_wrap(.~cols, scales="free", nrow=5)+
+       theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+```
+
+```{r correlation-plot, fig.height=14, fig.width=14, warning=FALSE}
 # Correlation Plots
 upper_panel<-function(x, y){
     points(x,y, pch=19)
@@ -161,7 +181,7 @@ ggsave(
 gg
 ```
 
-```{r}
+```{r observed-correlation}
 
 pairs(data_df[c("HTHG", "FTHG", "HTAG", "FTAG")],
       upper.panel = upper_panel,
@@ -172,12 +192,11 @@ pairs(data_df[c("HS", "HST", "AS", "AST")],
       upper.panel = upper_panel,
       lower.panel = lower_panel)
 
-
 # ggplot(gather(data_df[,["HT", "HST", "AT", "AST"]], cols, value), aes(x = value)) + 
        # geom_histogram(stat="count") + facet_wrap(.~cols, scales="free", nrow=2)
 ```
 
-```{r  fig.height=14, fig.width=14}
+```{r  WDL-team, fig.height=14, fig.width=14}
 home_team_wins <- as.data.frame(table(filter(data_df, FTR=="H")$HomeTeam))
 away_team_wins <- as.data.frame(table(filter(data_df, FTR=="A")$AwayTeam))
 
@@ -221,9 +240,17 @@ val_team_wins$Away_Strength <- ((val_team_wins$AwayWins*3+val_team_wins$AwayDraw
   (val_team_wins$AwayWins+val_team_wins$AwayLoss+val_team_wins$AwayDraw)*3))*100
 ```
 
-```{r}
-hist(val_team_wins$Home_Strength)
-hist(val_team_wins$Away_Strength)
+```{r team-strength, fig.height=10, fig.width=10}
+ggplot(val_team_wins, mapping=aes(x = Home_Strength, y = Away_Strength, label = TeamName)) +
+  geom_point() +
+  geom_text(size = 4, hjust = 0, vjust = 0) +
+  labs(x = "Home Strength",
+       y = "Away Strength") +
+  scale_x_continuous(limits = c(0, 100), breaks = seq(0, 100, by = 5)) + 
+  scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, by = 5)) + 
+  geom_hline(yintercept = 45, color = "black", linetype = "dashed") + 
+  geom_vline(xintercept = 50, color = "black", linetype = "dashed") +
+  theme_minimal()
 ```
 
 ```{r}
@@ -237,19 +264,49 @@ str(final_df)
 final_df <- final_df2[-c(1,2)]
 ```
 
-```{r}
+```{r final-correlation, fig.height=14, fig.width=14}
+num_col = unlist(lapply(final_df, is.numeric))
+num_data = final_df[,num_col]
+pairs(num_data,
+      upper.panel = upper_panel,
+      lower.panel = lower_panel)
+```
+
+```{r category-distribution}
+ggplot(data=final_df, aes(x=Home_Strength, fill=FTR)) +
+  geom_histogram(position="dodge", binwidth=1, aes(y=after_stat(density)))+
+  labs(x = "Home Strength",
+       color = "Full Time Result")
+
+ggplot(data=final_df, aes(x=Away_Strength, fill=FTR)) +
+  geom_histogram(position="dodge", binwidth=1, aes(y=after_stat(density)))+
+  labs(x = "Away Strength",
+       color="Full time Result")
+
+ggplot(data=final_df, aes(x=HST, fill=FTR)) +
+  geom_histogram(position="dodge", binwidth=1, aes(y=after_stat(density)))+
+  labs(x = "Home Team Shots on Target",
+       color = "Full time Result")
+
+ggplot(data=final_df, aes(x=AST, fill=FTR)) +
+  geom_histogram(position="dodge", binwidth=1, aes(y=after_stat(density)))+
+  labs(x = "Away Team Shots on Target",
+       color = "Full time Result")
+```
+
+```{r home-strength-team}
 ggplot(aes(y=reorder(TeamName, Home_Strength), x=Home_Strength,
        fill=Home_Strength),
        data=val_team_wins[order(val_team_wins$Home_Strength, decreasing=TRUE)[1:10],])+
   geom_bar(stat="identity")+
   scale_fill_gradient(low = "cyan", high = "blue")+
-  ylab("Team")
+  ylab("Team")+xlab("Home Strength")
 ```
-```{r}
+```{r away-strength-team}
 ggplot(aes(y=reorder(TeamName, Away_Strength), x=Away_Strength,
        fill=Away_Strength),
        data=val_team_wins[order(val_team_wins$Away_Strength, decreasing=TRUE)[1:10],])+
   geom_bar(stat="identity")+
   scale_fill_gradient(low = "violet", high = "darkblue")+
-  ylab("Team")
+  ylab("Team")+xlab("Away Strength")
 ```

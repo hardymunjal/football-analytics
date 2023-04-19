@@ -1,18 +1,33 @@
 ---
 title: "Football Analytics Report"
+author: |
+  | Hardik Munjal
+  | Japneet Singh
+  | Utkarsh Mehta
 output:
-  pdf_document:
-    number_sections: true
-    sansfont: Times New Roman
-date: "2023-04-14"
+  bookdown::pdf_book:
+    toc: true
+    toc_depth: 3
+    number_sections: yes
+    latex_engine: xelatex
+date: "`r Sys.Date()`"
+geometry: margin=2.54cm
+fontsize: 10pt
+fontsetup: "unicode-math"
 bibliography: references.yaml
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, fig.align="center")
 ```
 
-## Introduction
+```{r echo=FALSE, warning=FALSE, results="asis"}
+library(kableExtra)
+```
+
+\newpage
+
+# Introduction
 
 Football, or soccer as it is known in some parts of the world, has long been one of the most popular sports globally. The first-ever international match was played in 1872 between England and Scotland which ended in a draw with score 0-0. Since the early 21st century, with an increase in global broadcasting, interest in football has been rising all around the world. A survey of 18 major markets across the Americas, Europe, the Middle East and Asia shows the sport garnering powerful interest in more than 40% of the population, well ahead of its nearest rival sports[^1]. Football is a sport that transcends gender all over the world. According to Nielsen SportsDNA global research[^2], football is the most popular sport among women worldwide, and a recent study found that 70% of women find the men's FIFA World Cup "very appealing," while 58% find the women's FIFA World Cup "very appealing."
 
@@ -30,54 +45,50 @@ Today, in live matches, data is collected in many ways and under different categ
 
 In this report, we discuss how we use the open source performance data available to examine the results of Head-to-Head games and the impact of home-field advantage, using a range of statistical measures and visualization techniques. Overall, football analytics represents an exciting and rapidly evolving field, with enormous potential for improving our understanding of the sport and making more informed decisions.
 
-## Data set Source and Detailed Description
+# Data set Source and Detailed Description
 
-### Dataset Description
+## Dataset Description
 
 The football-data.co.uk England dataset is a collection of English football matches from 1993-1994 to 2022-2023 for various leagues including Premier League, Champion League, League1, etc. The dataset includes detailed information on each match such as the date, time, location, teams, and final score. In addition, it also includes data on the goals scored by each team, shots on target, fouls committed, cards given, and other relevant statistics.
 
-### Source
+## Source
 
 The website is a free resource that provides comprehensive football data from various leagues and competitions around the world. The data is available as CSV files with each CSV file containing data pertaining to each season. For our analysis, we are focusing on the Premier League because it is the most popular league and has sufficient data points to perform the analysis.
 
 Dataset -- <https://www.football-data.co.uk/englandm.php>
 
-### Sample Size
+## Sample Size
 
-We scraped the latest 12 seasons data i.e., 2011-2012 to 2022-2023 which contains data on 4451 matches with 21 variables of interest as described in the below table with our response variable as FTR with three categories (H: home team win, A: away team win, D: draw)
+We scraped the latest 12 seasons data i.e., 2011-2012 to 2022-2023 which contains data on 4451 matches with 21 variables of interest as described in *Table 1* with our response variable as FTR with three categories (H: home team win, A: away team win, D: draw)
 
 ```{r echo=FALSE, warning=FALSE, results="asis"}
-library(kableExtra)
 table_description_df <- data.frame(
   Variable = c("DIV","DATE","TIME","HOMETEAM","AWAYTEAM","FTHG","FTAG","FTR","HTHG","HTAG","HTR","REFEREE","HS","AS","HST","AST","HF","AF","HC","AC","HY","AY","HR","AR"),
   Description = c("Division of the league","Date of the match","Time of the match","Name of the Home Team","Name of the Away Team","Number of goals scored by the home Team at fulltime","Number of goals scored by the away Team at fulltime","Full-time result (H: home team win, A: away team win, D: draw)","Number of goals scored by the home team at halftime","Number of goals scored by the away team at halftime","Halftime result (H: home team win, A: away team win, D: draw)","Name of the match referee","Number of shots taken by the home team","Number of shots taken by the away team","Number of shots on target by the home team","Number of shots on target by the away team","Number of fouls committed by the home team","Number of fouls committed by the away team","Number of corners taken by the home team","Number of corners taken by the away team","Number of yellow cards given to the home team","Number of yellow cards given to the away team","Number of red cards given to the home team","Number of red cards given to the away team"))
 
-kbl(table_description_df , booktabs = T) %>%
-  kable_styling(latex_options = "striped")
+kbl(table_description_df , booktabs = TRUE,  longtable = TRUE, caption = "Description of all the variables in the dataset") %>%
+  kable_styling(latex_options =  c("HOLD_position","striped", "repeat_header"))
 ```
 
-### Data cleaning & Processing:
+# Methodology
 
-Our data cleaning process involved checking for missing or data
+## Exploratory Data Analysis
 
-During our data cleaning process, we conducted a thorough check for null values in our data set. We assessed each variable individually to identify any missing values and found that only one row contained some missing data. Given that our data set consisted of 4451 rows, we determined that dropping this single row would not significantly impact our analysis. Therefore, we removed this row and proceeded further with our analysis using the remaining 4450 rows.
+A comprehensive EDA methodology was utilized to thoroughly examine and analyze the dataset.
 
-## Methodology
+### Descriptive Statistics and Data Cleaning
 
-### Distribution Plots
+We computed descriptive statistics such as mean, median, quantiles, minimum and maximum values for each variable to gain a basic understanding of their central tendencies and dispersion. Consequently, we carefully examined our dataset for any missing values. We conducted a thorough assessment of each variable individually and identified that only one row had missing data. Since our dataset contained a total of 4451 rows, we determined that removing this single row would not have a significant impact on our analysis. Hence, we proceeded to remove this row and continued our analysis with the remaining 4450 rows. Furthermore, we also performed data validation checks and converted categorical data into factors for further analysis.
 
-It is vital to check for any class imbalance, outliers, and skewness of data before fitting a model. In our analysis, we assessed the quality of our data by examining its distribution and checking for outliers using histogram and bar plots. First, we checked for the distribution using bar plots for categorical data. A bar plot is a type of visualization that displays the data using rectangular bars, where the height of each bar represents the frequency or the count of data values falling under a specific category. We had five categorical variables, so we plotted the distribution of these five variables using this method.
-Next, we checked the distribution of the continuous variables using histograms. Histograms are a type of data visualization like bar chart except that it is used for continuous data. It is used to explore the spread and the shape of the data by dividing the data into a set of intervals (bins) and the count of data points that fall within each bin is shown as a bar. We plotted histograms for 17 variables and then analyzed their distribution.
+### Data Visualization and Outlier Analysis
 
-Our analysis revealed that most of our data was normally distributed with no significant skewness and there were no significant outliers present. Additionally, we observed that all three classes (win, loss, and draw) had enough data, which indicates that our data is suitable for modeling.
+To examine the quality of our data, we utilized various visualization techniques, including bar plots, box plots, scatter plots and histograms. To assess the distribution of categorical variables, we used bar plots, which are effective visualizations that display frequency of categories using rectangular bars. For continuous variables, we employed histograms, which are useful for exploring the spread and shape of data. In addition to examining the distribution of data using bar plots and histograms, we also checked for outliers using box plots. These visualizations allowed us to identify potential outliers and assess their impact on our data analysis. By thoroughly examining the distribution, outliers, and skewness of our data, we ensured the quality and reliability of our analysis and subsequent modeling approaches.
 
-### Outlier Analysis
-...
-
+We also utilized two-dimensional plots to investigate whether there were any discernible patterns or evidence of predictors effectively separating the three classes.
 
 ### Correlation Analysis
-Next, we examined the correlation between our numerical variables. Correlation represents the degree to which two or more variables are related or associated with each other. It indicates how strong the relationship is between two variables, and whether it is positive, negative, or neutral. This step is crucial because highly correlated variables can lead to unstable parameter estimates, high standard errors, and reduced predictive performance. 
-Since the majority of our variables (18 out of 22) are numerical, we deemed it necessary to check for correlation for these numerical variables. By identifying any highly correlated variables and removing them from our analysis, we could improve the parameter estimates and the predictive power of the final model. We found out that eight of our predictor variables showed correlation, so we examined these separately. Out of these eight highly correlated variables, we dropped four variables- FTHG (full time home team goals) highly positively correlated with HTHG (half time home team goals), FTAG (full time away team goals) highly positively correlated with HTAG (half time away team goals), HS (shots taken by the home team) highly positively correlated with HST (number of shots on target by the home team), and AS (shots taken by the away team) highly positively correlated with AST (number of shots on target by the away team).
+
+Furthermore, we performed correlation analysis to examine the correlations between variables (both dependent and independent) to identify potential patterns or relationships, and determining the strength and direction of these correlations. This step is crucial because highly correlated predictor variables can lead to unstable parameter estimates, high standard errors, and reduced predictive performance and therefore, need to be removed.
 
 ### Feature Engineering
 
@@ -91,59 +102,103 @@ $$
 
 $$
 \text{Away Strength} = 100*\frac{(\text{Total away wins})*3 + (\text{Total away draws})*1}{(\text{Total matches away matches played})*3}
-$$ \### Multinomial Logistic Regression
+$$
 
-It is an extension of the binomial regression model where the response variable takes more than two categories. Since, FTR has three categories (Win, Draw, Lose), we used multinomial logistic regression to model the outcomes. We started by using a baseline model that includes all the relevant variables and used step wise selection to eliminate the variables that did not add any significance to the model.
+The entire EDA process was iterative and data-driven, involving hypothesis generation, testing, and refinement to draw meaningful insights and conclusions from the data.
 
-In our modelling, we declared 'Draw' category as the baseline, say, j = 1.
+To ensure that our model generalizes well on unseen data, we split our dataset into Training (80%) **[Add number of rows]** and Testing (20%) **[Add number of rows]** data using random sampling and performed all further analyses on training data.
 
-Then, the multinomial logit model links the probabilities pij to the predictors as follows:
+## Main Data Analysis
+
+Our goal for the main data analyses was to predict the full time result (FTR) of the match and identify the significant predictor variables that are associated with the outcome of a football match.
+
+For the main data analysis we employed three different models to analyze our data: Multinomial Logistic Regression, Decision Trees, and Random Forest. These three models were selected based on their suitability for our data and research objectives. By utilizing a combination of these models, we aimed to gain a comprehensive understanding of the relationship between our predictor variables and the multi-class categorical response variable, and to make informed and robust model for our data analysis.
+
+### Multinomial Logistic Regression
+
+Firstly, given our response variable is a multi-class categorical variable, we utilized Multinomial Logistic Regression. It is an extension of the binomial regression model where the response variable takes more than two categories. Given, a category j = 1 as baseline, a multinomial logit model links the probabilities $p_{ij}$ to the predictors as follows:
 
 $$\eta_{ij} = \beta_{0j} + \beta_{1j}x_{1i}  + . . . + \beta_{(p−1)j}x_{(p−1)i} = x^T_i \beta_j = \log {p_{ij}/p_{i1}}$$
 
-So that we get,
+So that we get, $p_{i1} = 1 - \sum_{j=2}^{J} p_{ij}$, and $p_j=\frac{\exp(\eta_{ij})}{1+\sum_{j=2}^{J} \exp_{\eta ij}} for 2\leq j\leq J$
 
-$$p_{i1} = 1 - \sum_{j=2}^{J} p_{ij}$$
+Here, $\eta_{i1} = \log {p_{i1}/p_{i1}} = log 1 = 0$
 
-and,
+It can be used to classify new observations by predicting the probability of each possible category. The category with the highest probability is then assigned to the observation. In this way, the multinomial logistic regression model can be used as a classifier to predict the category of a new observation based on its predictor variables.
 
-$$p_{ij} = \frac{\exp(\eta_{ij})}{1+\sum_{j=2}^{J} \exp_{\eta ij}} for
-2\leq j\leq J$$
+We changed the reference level to *Draw* category to understand the impact of predictors on a win for either *Home* or *Away* Team.
 
-Note that $$ \eta_{i1}  = 0 (= \eta_{i1} = \log {p_{i1}/p_{i1}} = log 1 = 0)$$
+For model selection, we started with a model that includes all the relevant predictors and used step wise selection using AIC metric to eliminate the insignificant predictors. AIC (Akaike Information Criterion) is calculated by taking into account the goodness-of-fit of a model and the complexity of the model. AIC penalizes models for having a higher number of parameters, aiming to strike a balance between model performance and complexity. A lower AIC value indicates a better-fitting model, as it considers both model fit and parsimony.
 
-### Decision Trees:
+To test the goodness of fit we performed a Chi Squared test. The null hypothesis assumes that there is no significant difference between the observed and expected frequencies, indicating that the model fits the data well.
 
-Decision trees are a popular machine learning algorithm that is used for classification and regression tasks. We split the input data sets into subsets based on the values of the input features, and then recursively apply the same process to each subset until a stopping criterion is met.
+$H_0: P_1 = E_1, P_2 = E_2, ..., P_k = E_k$, where $P_1$, $P_2$, \..., $P_k$ are the observed probabilities in each category of the response variable, and $E_1$, $E_2$, \..., $E_k$ are the expected probabilities predicted by the model.
 
-The data is split into subsets based on the values of the input features, such that each subset contains as many samples as possible that belong to the same class. The goal is to minimize the misclassification rate by constructing a decision tree that separates the classes as effectively as possible.
+Furthermore, we utilized interaction plots to visualize the interaction effects between two predictors on the outcome variable. It displays the relationship between the outcome variable and one predictor, separately for different levels or categories of another predictor.This analysis provides us with visual evidence of the presence or absence of interactions.
 
-One of the main advantages of decision trees is that they are easy to interpret and visualize, making them a useful tool for exploratory data analysis. Decision trees can also handle both categorical and continuous data, and can capture non-linear relationships between the input features and the target variable.
+Lastly, to assess the validity and appropriateness of the multinomial model, we performed model diagnostics which involves evaluating the assumptions and performance of the model to ensure that it is reliable and accurate in capturing the underlying patterns and relationships in the data.
 
-However, decision trees are prone to over fitting, especially when the tree is deep and complex. To overcome this issue, various techniques such as pruning, setting a maximum tree depth, and using ensemble methods like random forests have been developed.
+### Decision Trees
 
-### Random Forests:
+Next, we employed Decision Tree Classifier, a non-parametric supervised learning technique that can be used for classification and regression tasks. They are a type of predictive model that uses a tree-like structure to represent and classify observations based on sequence of binary decisions. The decision tree algorithm recursively splits the data into different branches based on the predictor variables and their corresponding values, ultimately leading to terminal nodes (i.e., leaves) that represent the predicted response variable category for a given set of predictor variable values. The decision tree can then be used to classify new data points into one of the categories based on the paths followed in the tree. Some of the advantages of decision trees are that they are easy to interpret and visualize, can handle both categorical and continuous data, and capture non-linear relationships between predictors and response variable.
 
-Random forests is a popular machine learning algorithm that is used for both classification and regression tasks. It is a type of ensemble learning method that combines decision trees to make more accurate and robust predictions.
+We also performed hyper-parameter tuning using various parameters. One of the key parameters we used was complexity parameter(*cp*) which saves computing time by pruning off splits that do not decrease the overall lack of fit by a factor of *cp*.
 
-The idea behind random forests is to build multiple decision trees using different subsets of the training data and a random selection of features at each split point. These decision trees are constructed independently of each other, meaning that they are not correlated and do not share any information during the training process.
+However, decision trees are prone to over fitting, especially when the tree is deep and complex. To overcome this issue we performed pruning on the decision tree model using the complexity parameter value obtained at the least relative error. Pruning refers to the process of selectively removing certain branches or nodes from a decision tree in order to improve its performance by reducing complexity.
 
-Once the decision trees are built, the random forest algorithm aggregates their predictions to make the final prediction. In classification tasks, the majority class predicted by the individual trees is chosen as the final output, while in regression tasks, the mean or median of the predicted values is taken as the final output.
+### Random Forests
+
+Finally, we implemented Random Forest classifier, an ensemble learning technique which involves constructing multiple decision trees using different subsets of the training data and randomly selected features at each split point. These decision trees are built independently, without correlation or information sharing during the training process. Once the decision trees are constructed, the random forest algorithm aggregates their predictions to make the final prediction. This approach helps to improve the accuracy and robustness of the classifier, as the ensemble of decision trees can compensate for individual tree biases and reduce overfitting by incorporating diversity in the feature selection and sample subsets used in each tree.
 
 An advantage of random forests is that they handle high-dimensional data and can capture complex non-linear relationships between the input features and the target variables. They are less prone to over fitting than single decision trees.
 
-## Results
+We performed hyper-parameter tuning to control the number of trees (*ntree*). A higher number of trees may increase the model's accuracy but also increase the computation time.
 
-### Exploratory Data Analysis
+### Model Evaluation and Comparison
+
+We employed several evaluation metrics to assess and compare the performance of the three models: multinomial logistic regression, decision trees, and random forest. The primary comparison metric chosen for our analysis was the area under the receiver operating characteristic curve (AUC), which is a widely used measure of a model's ability to accurately classify data points into their respective classes. The AUC provides a comprehensive overview of the model's discriminatory power across all classes, with higher values indicating better performance.
+
+Additionally, we plotted one-vs-rest ROC curves for the multinomial data, which allowed us to assess the performance of each class compared to the rest of the classes. This approach provided insights into the model's ability to discriminate between different classes individually, which can be particularly useful when dealing with imbalanced datasets or when specific class performance is of particular interest. For our 3-class response variable we got 3 different OvR scores and we averaged them to get a final OvR model score.
+
+Furthermore, we computed the Kappa statistic, which is a measure of agreement between the predicted and observed classes, taking into account the possibility of chance agreement. The Kappa statistic helps us understand the level of agreement between the model's predictions and the ground truth, with higher values indicating higher agreement.
+
+The use of multiple evaluation metrics allowed for a thorough comparison of the models' performance and facilitated the selection of the best-performing model for our analysis.
+
+# Results
+
+## Exploratory Data Analysis
+
+The exploratory data analysis (EDA) revealed important insights into the dataset. Descriptive statistics provided a comprehensive summary of the data as show in *Table 2,* and didn't highlight any incorrect values or any immediate need for scaling.
+
+```{r echo=FALSE, warning=FALSE, results="asis"}
+library(kableExtra)
+descriptive_df <- read.csv("data/descriptive_stats.csv")
+kbl(descriptive_df , booktabs = TRUE,  longtable = TRUE, caption = "Descriptive statistics computed over raw data") %>%
+  kable_styling(latex_options =  c("HOLD_position","striped", "scale_down"))
+```
+
+From distribution plots *(refer to Appendix B-1 and Appendix B-2)*, we found some predictor variables - Away Corners (AC), Away Shots on Target (AST), Home Corners (HC), Home Shots on Target HST) to be right skewed but the skewness was not significant to perform transformations.
+
+While outlier analysis using box plots *(refer to Appendix B-3)* identified outliers in some variables, which were retained in the analysis as they were not deemed as erroneous values. As shown in *Fig 1* two-dimensional distribution plots, showed that higher shots on target by the home team and away team were associated with improved chances of winning for each respective team.
+
+```{r echo=FALSE, fig.cap="Distribution plots for categorical variables", fig.subcap=c('(a)', '(b)') out.width = '49%',fig.show='hold'}
+knitr::include_graphics(c("./EDA_files/figure-latex/category-distribution-3.png", "./EDA_files/figure-latex/category-distribution-4.png"))
+```
+
+Correlation analysis uncovered significant relationships between variables. Four variables were dropped from further analysis due to their high positive correlations: FTHG (full-time home team goals) with HTHG (half-time home team goals), FTAG (full-time away team goals) with HTAG (half-time away team goals), HS (shots taken by the home team) with HST (number of shots on target by the home team), and AS (shots taken by the away team) with AST (number of shots on target by the away team).
+
+Additionally, feature engineering was performed to create Home Strength and Away Strength variables, which provided insights into team standings. The visualization of team standings based on these engineered variables further elucidated the relative performance of teams.
+
+Overall, the results of the EDA have enriched our understanding of the dataset, identified patterns and correlations, and informed subsequent steps in the analysis and interpretation of the results. These findings contribute to the foundation of the research and provide a robust basis for further analysis and inference.
+
+## Main Data Analysis
 
 . . .
 
-### Main Data Analysis
+# Conclusion
 
 . . .
 
-## Conclusion
+# References:
 
-. . .
-
-## References:
+...
